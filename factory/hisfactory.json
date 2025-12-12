@@ -1,0 +1,9 @@
+{
+	"name": "hisfactory",
+	"location": "centralindia",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "5b3449f7-772c-46d0-92b1-435ad0fe2590",
+		"tenantId": "9fec1ec1-8592-4e10-b439-44d4fdabf6fe"
+	}
+}

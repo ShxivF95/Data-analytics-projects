@@ -1,0 +1,165 @@
+{
+	"name": "API_Ingestion",
+	"properties": {
+		"activities": [
+			{
+				"name": "API_to_ADLS",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "RestSource",
+						"httpRequestTimeout": "00:01:40",
+						"requestInterval": "00.00:00:00.010",
+						"requestMethod": "GET",
+						"paginationRules": {
+							"AbsoluteUrl": "$.next"
+						}
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"path": "['name']"
+								},
+								"sink": {
+									"name": "name"
+								}
+							},
+							{
+								"source": {
+									"path": "['height']"
+								},
+								"sink": {
+									"name": "height"
+								}
+							},
+							{
+								"source": {
+									"path": "['mass']"
+								},
+								"sink": {
+									"name": "mass"
+								}
+							},
+							{
+								"source": {
+									"path": "['hair_color']"
+								},
+								"sink": {
+									"name": "hair_color"
+								}
+							},
+							{
+								"source": {
+									"path": "['skin_color']"
+								},
+								"sink": {
+									"name": "skin_color"
+								}
+							},
+							{
+								"source": {
+									"path": "['eye_color']"
+								},
+								"sink": {
+									"name": "eye_color"
+								}
+							},
+							{
+								"source": {
+									"path": "['birth_year']"
+								},
+								"sink": {
+									"name": "birth_year"
+								}
+							},
+							{
+								"source": {
+									"path": "['gender']"
+								},
+								"sink": {
+									"name": "gender"
+								}
+							},
+							{
+								"source": {
+									"path": "['homeworld']"
+								},
+								"sink": {
+									"name": "homeworld"
+								}
+							},
+							{
+								"source": {
+									"path": "['created']"
+								},
+								"sink": {
+									"name": "created"
+								}
+							},
+							{
+								"source": {
+									"path": "['edited']"
+								},
+								"sink": {
+									"name": "edited"
+								}
+							},
+							{
+								"source": {
+									"path": "['url']"
+								},
+								"sink": {
+									"name": "url"
+								}
+							}
+						],
+						"collectionReference": "$['results']"
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "RestAPI",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "adls_dataset",
+						"type": "DatasetReference",
+						"parameters": {
+							"container": "landing",
+							"folder": "Dataset",
+							"file_name": "swapi.csv"
+						}
+					}
+				]
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2025-12-12T05:44:44Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,26 @@
+{
+	"name": "hisServer69",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"parameters": {
+			"database": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"type": "SqlServer",
+		"typeProperties": {
+			"server": "LAPTOP-NKOE7QN2",
+			"database": "@{linkedService().database}",
+			"encrypt": "mandatory",
+			"trustServerCertificate": true,
+			"authenticationType": "SQL",
+			"userName": "fabric_user",
+			"encryptedCredential": "eyJDcmVkZW50aWFsSWQiOiI2NGQzMjE2NC1kNzY4LTQxZjctOTBmNy1mMjc3ZmFiN2RjNzgiLCJWZXJzaW9uIjoiMi4wIiwiQ2xhc3NUeXBlIjoiTWljcm9zb2Z0LkRhdGFQcm94eS5Db3JlLkludGVyU2VydmljZURhdGFDb250cmFjdC5DcmVkZW50aWFsU1UwNkNZMTQifQ=="
+		},
+		"connectVia": {
+			"referenceName": "microsoftchut",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}
