@@ -137,7 +137,7 @@
 														"type": "Expression"
 													},
 													"file_name": {
-														"value": "@split(item().tablename, '.')[1]",
+														"value": "@concat(split(item().tablename,'.')[1],\n    '_',\n    formatDateTime(utcNow(),'yyyyMMddHHmmss')\n)\n",
 														"type": "Expression"
 													}
 												}
