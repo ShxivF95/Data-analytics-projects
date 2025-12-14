@@ -1,0 +1,33 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "hisfactory"
+		},
+		"hisADLS_accountKey": {
+			"value": ""
+		},
+		"hisServer69_password": {
+			"value": ""
+		},
+		"API_properties_typeProperties_url": {
+			"value": "https://swapi.dev/api/people/?page=1"
+		},
+		"RestAPIwa_properties_typeProperties_url": {
+			"value": "https://digi-api.com/api/v1/digimon"
+		},
+		"hisADLS_properties_typeProperties_url": {
+			"value": "https://hisadls.dfs.core.windows.net/"
+		},
+		"hisServer69_properties_typeProperties_server": {
+			"value": "LAPTOP-NKOE7QN2"
+		},
+		"hisServer69_properties_typeProperties_database": {
+			"value": "@{linkedService().database}"
+		},
+		"hisServer69_properties_typeProperties_userName": {
+			"value": "fabric_user"
+		}
+	}
+}
