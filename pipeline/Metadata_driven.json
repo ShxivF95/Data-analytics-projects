@@ -78,7 +78,7 @@
 											"source": {
 												"type": "SqlServerSource",
 												"sqlReaderQuery": {
-													"value": "@concat(\n'select * from ',\nitem().database,'.',item().tablename)\n",
+													"value": "@concat(\n'select * from ',\nitem().database, '.', item().tablename,\n' where ', item().watermark, ' > ''',\nitem().modifieddatetime, ''''\n)\n",
 													"type": "Expression"
 												},
 												"queryTimeout": "02:00:00",
