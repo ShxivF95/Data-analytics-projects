@@ -255,12 +255,14 @@
 												"partitionOption": "None"
 											},
 											"sink": {
-												"type": "ParquetSink",
+												"type": "DelimitedTextSink",
 												"storeSettings": {
 													"type": "AzureBlobFSWriteSettings"
 												},
 												"formatSettings": {
-													"type": "ParquetWriteSettings"
+													"type": "DelimitedTextWriteSettings",
+													"quoteAllText": true,
+													"fileExtension": ".txt"
 												}
 											},
 											"enableStaging": false,
@@ -292,15 +294,15 @@
 										],
 										"outputs": [
 											{
-												"referenceName": "parquetwa",
+												"referenceName": "adls_dataset",
 												"type": "DatasetReference",
 												"parameters": {
-													"p_container": "suraksha",
-													"p_folder": {
+													"container": "suraksha",
+													"folder": {
 														"value": "@item().tablename",
 														"type": "Expression"
 													},
-													"p_file": {
+													"file_name": {
 														"value": "@concat(\n    item().tablename,\n    '-',\n    formatDateTime(utcNow(), 'yyyyMMdd')\n    )",
 														"type": "Expression"
 													}
