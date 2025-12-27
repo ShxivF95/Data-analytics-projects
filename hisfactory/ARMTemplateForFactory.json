@@ -662,7 +662,7 @@
 					}
 				},
 				"annotations": [],
-				"lastPublishTime": "2025-12-11T04:57:45Z"
+				"lastPublishTime": "2025-12-25T16:54:47Z"
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/sql_dataset')]",
@@ -1094,7 +1094,8 @@
 				"policy": {
 					"elapsedTimeMetric": {}
 				},
-				"annotations": []
+				"annotations": [],
+				"lastPublishTime": "2025-12-25T16:54:47Z"
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/sql_dataset')]",
