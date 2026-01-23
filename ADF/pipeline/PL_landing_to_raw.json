@@ -1,6 +1,68 @@
 {
 	"name": "PL_landing_to_raw",
 	"properties": {
+		"activities": [
+			{
+				"name": "landing_to_raw",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "BinarySource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true
+						},
+						"formatSettings": {
+							"type": "BinaryReadSettings"
+						}
+					},
+					"sink": {
+						"type": "BinarySink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_landing",
+						"type": "DatasetReference",
+						"parameters": {
+							"folderPath": {
+								"value": "@replace(\r\npipeline().parameters.p_filePath,\r\n'https://hisadls.blob.core.windows.net/landing/',\r\n''\r\n)",
+								"type": "Expression"
+							},
+							"fileName": {
+								"value": "@pipeline().parameters.p_fileName",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_raw",
+						"type": "DatasetReference",
+						"parameters": {
+							"fileName": {
+								"value": "@pipeline().parameters.p_fileName",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			}
+		],
 		"parameters": {
 			"p_filePath": {
 				"type": "string"
