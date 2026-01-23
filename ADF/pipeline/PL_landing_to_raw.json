@@ -1,0 +1,14 @@
+{
+	"name": "PL_landing_to_raw",
+	"properties": {
+		"parameters": {
+			"p_filePath": {
+				"type": "string"
+			},
+			"p_fileName": {
+				"type": "string"
+			}
+		},
+		"annotations": []
+	}
+}
