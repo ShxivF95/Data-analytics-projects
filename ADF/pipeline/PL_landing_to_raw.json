@@ -39,7 +39,7 @@
 						"type": "DatasetReference",
 						"parameters": {
 							"folderPath": {
-								"value": "@replace(\r\npipeline().parameters.p_filePath,\r\n'https://hisadls.blob.core.windows.net/landing/',\r\n''\r\n)",
+								"value": "@replace(\n  pipeline().parameters.p_filePath,\n  'https://hisadls.blob.core.windows.net/landing/',\n  ''\n)\n",
 								"type": "Expression"
 							},
 							"fileName": {
