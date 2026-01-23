@@ -1,0 +1,443 @@
+{
+	"name": "Metadata_driven",
+	"properties": {
+		"activities": [
+			{
+				"name": "Lookup_config",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlServerSource",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "sql_dataset",
+						"type": "DatasetReference",
+						"parameters": {
+							"database": "CS",
+							"schema": "dbo",
+							"table": "load_config"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Lookup_config",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Lookup_config').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "If Condition",
+							"type": "IfCondition",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@equals(item().loadtype, 'Full')",
+									"type": "Expression"
+								},
+								"ifFalseActivities": [
+									{
+										"name": "Incremental_load",
+										"type": "Copy",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "SqlServerSource",
+												"sqlReaderQuery": {
+													"value": "@concat(\n'select * from ',\nitem().database, '.', item().tablename,\n' where ', item().watermark, ' > ''',\nitem().watermark, ''''\n)\n",
+													"type": "Expression"
+												},
+												"queryTimeout": "02:00:00",
+												"partitionOption": "None"
+											},
+											"sink": {
+												"type": "DelimitedTextSink",
+												"storeSettings": {
+													"type": "AzureBlobFSWriteSettings",
+													"copyBehavior": "FlattenHierarchy"
+												},
+												"formatSettings": {
+													"type": "DelimitedTextWriteSettings",
+													"quoteAllText": true,
+													"fileExtension": ".txt"
+												}
+											},
+											"enableStaging": false,
+											"translator": {
+												"type": "TabularTranslator",
+												"typeConversion": true,
+												"typeConversionSettings": {
+													"allowDataTruncation": true,
+													"treatBooleanAsNumber": false
+												}
+											}
+										},
+										"inputs": [
+											{
+												"referenceName": "sql_dataset",
+												"type": "DatasetReference",
+												"parameters": {
+													"database": {
+														"value": "@item().database",
+														"type": "Expression"
+													},
+													"schema": {
+														"value": "@split(item().tablename, '.')[0]",
+														"type": "Expression"
+													},
+													"table": {
+														"value": "@split(item().tablename, '.')[1]",
+														"type": "Expression"
+													}
+												}
+											}
+										],
+										"outputs": [
+											{
+												"referenceName": "adls_dataset",
+												"type": "DatasetReference",
+												"parameters": {
+													"container": "bronze",
+													"folder": {
+														"value": "@item().destination",
+														"type": "Expression"
+													},
+													"file_name": {
+														"value": "@concat(split(item().tablename,'.')[1],\n    '_',\n    formatDateTime(utcNow(),'yyyyMMddHHmmss')\n)\n",
+														"type": "Expression"
+													}
+												}
+											}
+										]
+									},
+									{
+										"name": "update_config_I",
+										"type": "SqlServerStoredProcedure",
+										"dependsOn": [
+											{
+												"activity": "Incremental_load",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"storedProcedureName": "SP_update_log",
+											"storedProcedureParameters": {
+												"database": {
+													"value": {
+														"value": "@item().database",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"tablename": {
+													"value": {
+														"value": "@item().tablename",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"rows_count": {
+													"value": {
+														"value": "@activity('Incremental_load').output.rowsRead",
+														"type": "Expression"
+													},
+													"type": "Int16"
+												},
+												"loadtype": {
+													"value": {
+														"value": "@item().loadtype",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"watermark": {
+													"value": {
+														"value": "@item().watermark",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"is_active": {
+													"value": {
+														"value": "@if(item().is_active, 1, 0)\n",
+														"type": "Expression"
+													},
+													"type": "Int16"
+												},
+												"destination": {
+													"value": {
+														"value": "@item().destination",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"modified_datetime": {
+													"value": {
+														"value": "@utcNow()",
+														"type": "Expression"
+													},
+													"type": "Datetime"
+												},
+												"rows_copied": {
+													"value": {
+														"value": "@activity('Incremental_load').output.rowsCopied",
+														"type": "Expression"
+													},
+													"type": "Int16"
+												}
+											}
+										},
+										"linkedServiceName": {
+											"referenceName": "hisServer69",
+											"type": "LinkedServiceReference",
+											"parameters": {
+												"database": "CS"
+											}
+										}
+									}
+								],
+								"ifTrueActivities": [
+									{
+										"name": "Full_Load",
+										"type": "Copy",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "SqlServerSource",
+												"sqlReaderQuery": {
+													"value": "@concat('select * from ', item().database,'.',item().tablename)\n\n\n",
+													"type": "Expression"
+												},
+												"queryTimeout": "02:00:00",
+												"partitionOption": "None"
+											},
+											"sink": {
+												"type": "DelimitedTextSink",
+												"storeSettings": {
+													"type": "AzureBlobFSWriteSettings",
+													"copyBehavior": "FlattenHierarchy"
+												},
+												"formatSettings": {
+													"type": "DelimitedTextWriteSettings",
+													"quoteAllText": true,
+													"fileExtension": ".txt"
+												}
+											},
+											"enableStaging": false,
+											"translator": {
+												"type": "TabularTranslator",
+												"typeConversion": true,
+												"typeConversionSettings": {
+													"allowDataTruncation": true,
+													"treatBooleanAsNumber": false
+												}
+											}
+										},
+										"inputs": [
+											{
+												"referenceName": "sql_dataset",
+												"type": "DatasetReference",
+												"parameters": {
+													"database": {
+														"value": "@item().database",
+														"type": "Expression"
+													},
+													"schema": {
+														"value": "@split(item().tablename, '.')[0]",
+														"type": "Expression"
+													},
+													"table": {
+														"value": "@split(item().tablename, '.')[1]",
+														"type": "Expression"
+													}
+												}
+											}
+										],
+										"outputs": [
+											{
+												"referenceName": "adls_dataset",
+												"type": "DatasetReference",
+												"parameters": {
+													"container": "bronze",
+													"folder": {
+														"value": "@item().destination",
+														"type": "Expression"
+													},
+													"file_name": {
+														"value": "@split(item().tablename, '.')[1]",
+														"type": "Expression"
+													}
+												}
+											}
+										]
+									},
+									{
+										"name": "update_config",
+										"type": "SqlServerStoredProcedure",
+										"dependsOn": [
+											{
+												"activity": "Full_Load",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"storedProcedureName": "SP_update_log",
+											"storedProcedureParameters": {
+												"database": {
+													"value": {
+														"value": "@item().database",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"tablename": {
+													"value": {
+														"value": "@item().tablename",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"rows_Count": {
+													"value": {
+														"value": "@activity('Full_Load').output.rowsRead",
+														"type": "Expression"
+													},
+													"type": "Int16"
+												},
+												"loadtype": {
+													"value": {
+														"value": "@item().loadtype",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"watermark": {
+													"value": {
+														"value": "@item().watermark",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"is_active": {
+													"value": {
+														"value": "@if(item().is_active, 1, 0)\n",
+														"type": "Expression"
+													},
+													"type": "Int16"
+												},
+												"destination": {
+													"value": {
+														"value": "@item().destination",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"rows_Copied": {
+													"value": {
+														"value": "@activity('Full_Load').output.rowsCopied",
+														"type": "Expression"
+													},
+													"type": "Int16"
+												},
+												"modified_datetime": {
+													"value": {
+														"value": "@utcNow()",
+														"type": "Expression"
+													},
+													"type": "Datetime"
+												}
+											}
+										},
+										"linkedServiceName": {
+											"referenceName": "hisServer69",
+											"type": "LinkedServiceReference",
+											"parameters": {
+												"database": "CS"
+											}
+										}
+									}
+								]
+							}
+						}
+					]
+				}
+			}
+		],
+		"variables": {
+			"pipeline_end": {
+				"type": "String"
+			},
+			"rows_read": {
+				"type": "String"
+			},
+			"rows_copied": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-12-25T16:54:47Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

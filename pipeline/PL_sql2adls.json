@@ -1,0 +1,424 @@
+{
+	"name": "PL_sql2adls",
+	"properties": {
+		"activities": [
+			{
+				"name": "Lookup_meta",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlServerSource",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "sql_dataset",
+						"type": "DatasetReference",
+						"parameters": {
+							"database": "CS",
+							"schema": "dbo",
+							"table": "metadata_table"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Lookup_meta",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Lookup_meta').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "If Condition",
+							"type": "IfCondition",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@equals(item().loadtype, 'Full')",
+									"type": "Expression"
+								},
+								"ifFalseActivities": [
+									{
+										"name": "Incremental_load",
+										"type": "Copy",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "SqlServerSource",
+												"sqlReaderQuery": {
+													"value": "@concat(\n'select * from ',\nitem().database,'.','dbo','.',item().tablename)\n",
+													"type": "Expression"
+												},
+												"queryTimeout": "02:00:00",
+												"partitionOption": "None"
+											},
+											"sink": {
+												"type": "DelimitedTextSink",
+												"storeSettings": {
+													"type": "AzureBlobFSWriteSettings"
+												},
+												"formatSettings": {
+													"type": "DelimitedTextWriteSettings",
+													"quoteAllText": true,
+													"fileExtension": ".txt"
+												}
+											},
+											"enableStaging": false,
+											"translator": {
+												"type": "TabularTranslator",
+												"typeConversion": true,
+												"typeConversionSettings": {
+													"allowDataTruncation": true,
+													"treatBooleanAsNumber": false
+												}
+											}
+										},
+										"inputs": [
+											{
+												"referenceName": "sql_dataset",
+												"type": "DatasetReference",
+												"parameters": {
+													"database": {
+														"value": "@item().database",
+														"type": "Expression"
+													},
+													"schema": "dbo",
+													"table": {
+														"value": "@item().tablename",
+														"type": "Expression"
+													}
+												}
+											}
+										],
+										"outputs": [
+											{
+												"referenceName": "adls_dataset",
+												"type": "DatasetReference",
+												"parameters": {
+													"container": "suraksha",
+													"folder": {
+														"value": "@item().tablename",
+														"type": "Expression"
+													},
+													"file_name": {
+														"value": "@concat(\n    item().tablename,\n    '-',\n    formatDateTime(utcNow(), 'yyyyMMdd')\n    )",
+														"type": "Expression"
+													}
+												}
+											}
+										]
+									},
+									{
+										"name": "update_metadata_table",
+										"type": "SqlServerStoredProcedure",
+										"dependsOn": [
+											{
+												"activity": "Incremental_load",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"storedProcedureName": "[dbo].[UPDATE_Metadata_table]",
+											"storedProcedureParameters": {
+												"database": {
+													"value": {
+														"value": "@item().database",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"destination": {
+													"value": {
+														"value": "@item().destination",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"ingested_at": {
+													"value": {
+														"value": "@utcNow()",
+														"type": "Expression"
+													},
+													"type": "DateTime"
+												},
+												"is_active": {
+													"value": {
+														"value": "@if(item().is_active, 1, 0)",
+														"type": "Expression"
+													},
+													"type": "Int32"
+												},
+												"loadtype": {
+													"value": {
+														"value": "@item().loadtype",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"rowcount": {
+													"value": {
+														"value": "@activity('Incremental_load').output.rowsRead",
+														"type": "Expression"
+													},
+													"type": "Int32"
+												},
+												"rows_copied": {
+													"value": {
+														"value": "@activity('Incremental_load').output.rowsCopied",
+														"type": "Expression"
+													},
+													"type": "Int32"
+												},
+												"tablename": {
+													"value": {
+														"value": "@item().tablename",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"watermark": {
+													"value": {
+														"value": "@item().watermark",
+														"type": "Expression"
+													},
+													"type": "String"
+												}
+											}
+										},
+										"linkedServiceName": {
+											"referenceName": "hisServer69",
+											"type": "LinkedServiceReference",
+											"parameters": {
+												"database": "CS"
+											}
+										}
+									}
+								],
+								"ifTrueActivities": [
+									{
+										"name": "Full_load",
+										"type": "Copy",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "SqlServerSource",
+												"sqlReaderQuery": {
+													"value": "@concat(\n    'select * from ', \n    item().database,'.','dbo','.',item().tablename)",
+													"type": "Expression"
+												},
+												"queryTimeout": "02:00:00",
+												"partitionOption": "None"
+											},
+											"sink": {
+												"type": "DelimitedTextSink",
+												"storeSettings": {
+													"type": "AzureBlobFSWriteSettings"
+												},
+												"formatSettings": {
+													"type": "DelimitedTextWriteSettings",
+													"quoteAllText": true,
+													"fileExtension": ".txt"
+												}
+											},
+											"enableStaging": false,
+											"translator": {
+												"type": "TabularTranslator",
+												"typeConversion": true,
+												"typeConversionSettings": {
+													"allowDataTruncation": true,
+													"treatBooleanAsNumber": false
+												}
+											}
+										},
+										"inputs": [
+											{
+												"referenceName": "sql_dataset",
+												"type": "DatasetReference",
+												"parameters": {
+													"database": {
+														"value": "@item().database",
+														"type": "Expression"
+													},
+													"schema": "dbo",
+													"table": {
+														"value": "@item().tablename",
+														"type": "Expression"
+													}
+												}
+											}
+										],
+										"outputs": [
+											{
+												"referenceName": "adls_dataset",
+												"type": "DatasetReference",
+												"parameters": {
+													"container": "suraksha",
+													"folder": {
+														"value": "@item().tablename",
+														"type": "Expression"
+													},
+													"file_name": {
+														"value": "@concat(\n    item().tablename,\n    '-',\n    formatDateTime(utcNow(), 'yyyyMMdd')\n    )",
+														"type": "Expression"
+													}
+												}
+											}
+										]
+									},
+									{
+										"name": "update_records",
+										"type": "SqlServerStoredProcedure",
+										"dependsOn": [
+											{
+												"activity": "Full_load",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"storedProcedureName": "[dbo].[UPDATE_Metadata_table]",
+											"storedProcedureParameters": {
+												"database": {
+													"value": {
+														"value": "@item().database",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"destination": {
+													"value": {
+														"value": "@item().destination",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"ingested_at": {
+													"value": {
+														"value": "@utcNow()",
+														"type": "Expression"
+													},
+													"type": "DateTime"
+												},
+												"is_active": {
+													"value": {
+														"value": "@if(item().is_active, 1, 0)\n",
+														"type": "Expression"
+													},
+													"type": "Int32"
+												},
+												"loadtype": {
+													"value": {
+														"value": "@item().loadtype",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"rowcount": {
+													"value": {
+														"value": "@activity('Full_load').output.rowsRead",
+														"type": "Expression"
+													},
+													"type": "Int32"
+												},
+												"rows_copied": {
+													"value": {
+														"value": "@activity('Full_load').output.rowsCopied",
+														"type": "Expression"
+													},
+													"type": "Int32"
+												},
+												"tablename": {
+													"value": {
+														"value": "@item().tablename",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"watermark": {
+													"value": {
+														"value": "@item().watermark",
+														"type": "Expression"
+													},
+													"type": "String"
+												}
+											}
+										},
+										"linkedServiceName": {
+											"referenceName": "hisServer69",
+											"type": "LinkedServiceReference",
+											"parameters": {
+												"database": "CS"
+											}
+										}
+									}
+								]
+							}
+						}
+					]
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2025-12-25T16:54:47Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
