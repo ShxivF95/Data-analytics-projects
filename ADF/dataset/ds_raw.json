@@ -1,0 +1,30 @@
+{
+	"name": "ds_raw",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "hisADLS",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"fileName": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().fileName",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "ingest_date=@{formatDateTime(utcNow(), 'yyyyMMdd')}",
+					"type": "Expression"
+				},
+				"fileSystem": "raw"
+			}
+		}
+	}
+}
