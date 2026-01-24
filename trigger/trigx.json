@@ -3,18 +3,7 @@
 	"properties": {
 		"annotations": [],
 		"runtimeState": "Started",
-		"pipelines": [
-			{
-				"pipelineReference": {
-					"referenceName": "PL_landing_to_raw",
-					"type": "PipelineReference"
-				},
-				"parameters": {
-					"source_filePath": "@trigger().outputs.folderPath",
-					"source_fileName": "@trigger().outputs.fileName"
-				}
-			}
-		],
+		"pipelines": [],
 		"type": "BlobEventsTrigger",
 		"typeProperties": {
 			"blobPathBeginsWith": "/landing/blobs/semi_struc/",
