@@ -39,13 +39,14 @@
 						"type": "DatasetReference",
 						"parameters": {
 							"folderPath": {
-								"value": "@replace(\n  pipeline().parameters.source_filePath,\n  '/landing/',\n  '/raw/'\n)\n",
+								"value": "@pipeline().parameters.source_filePath",
 								"type": "Expression"
 							},
 							"fileName": {
 								"value": "@pipeline().parameters.source_fileName",
 								"type": "Expression"
-							}
+							},
+							"containerName": "landing"
 						}
 					}
 				],
